@@ -6,7 +6,6 @@ const signatureSchema = new mongoose.Schema({
   id: {
     type: String,
     default: () => uuidv4(),
-    unique: true
   },
   content: {
     type: String,

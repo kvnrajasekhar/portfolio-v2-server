@@ -48,16 +48,19 @@ const authMiddleware = async (req, res, next) => {
 // Admin Middleware - Only portfolio owner can access
 const adminMiddleware = async (req, res, next) => {
   try {
-    const portfolioOwnerId = process.env.PORTFOLIO_OWNER_OAUTH_ID;
+    const portfolioOwnerOauthIds = process.env.PORTFOLIO_OWNER_OAUTH_ID;
 
-    if (!portfolioOwnerId) {
+    if (!portfolioOwnerOauthIds) {
       return res.status(500).json({
         success: false,
         message: 'Portfolio owner ID not configured.'
       });
     }
 
-    if (req.user.oauthId !== portfolioOwnerId) {
+    // Support multiple OAuth IDs (comma-separated)
+    const allowedIds = portfolioOwnerOauthIds.split(',').map(id => id.trim());
+
+    if (!allowedIds.includes(req.user.oauthId)) {
       return res.status(403).json({
         success: false,
         message: 'Access denied. Admin privileges required.'

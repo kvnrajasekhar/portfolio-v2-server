@@ -1,7 +1,6 @@
 const passport = require('passport');
 const GitHubStrategy = require('passport-github2').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const LinkedInStrategy = require('passport-linkedin-oauth2').Strategy;
 const JwtStrategy = require('passport-jwt').Strategy;
 const ExtractJwt = require('passport-jwt').ExtractJwt;
 const User = require('../models/User.model');
@@ -12,7 +11,7 @@ const User = require('../models/User.model');
 passport.use(new GitHubStrategy({
   clientID: process.env.GITHUB_CLIENT_ID,
   clientSecret: process.env.GITHUB_CLIENT_SECRET,
-  callbackURL: "/api/auth/github/callback"
+  callbackURL: process.env.GITHUB_CALLBACK_URL
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     const userData = {
@@ -33,7 +32,7 @@ passport.use(new GitHubStrategy({
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "/api/auth/google/callback"
+  callbackURL: process.env.GOOGLE_CALLBACK_URL
 }, async (accessToken, refreshToken, profile, done) => {
   try {
     const userData = {
@@ -51,25 +50,30 @@ passport.use(new GoogleStrategy({
 }));
 
 // LinkedIn Strategy
-passport.use(new LinkedInStrategy({
+const OpenIDConnectStrategy = require('passport-openidconnect').Strategy;
+
+passport.use('linkedin', new OpenIDConnectStrategy({
+  issuer: 'https://www.linkedin.com',
+  authorizationURL: 'https://www.linkedin.com/oauth/v2/authorization',
+  tokenURL: 'https://www.linkedin.com/oauth/v2/accessToken',
+  userInfoURL: 'https://api.linkedin.com/v2/userinfo',
   clientID: process.env.LINKEDIN_CLIENT_ID,
   clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
-  callbackURL: "/api/auth/linkedin/callback",
-  scope: ['r_liteprofile', 'r_emailaddress']
-}, async (accessToken, refreshToken, profile, done) => {
-  try {
-    const userData = {
-      oauthId: profile.id,
-      name: profile.displayName,
-      profileImg: profile.photos[0]?.value || '',
-      provider: 'linkedin'
-    };
+  callbackURL: process.env.LINKEDIN_CALLBACK_URL,
+  scope: ['openid', 'profile', 'email']
+}, (issuer, profile, done) => {
+  // OIDC profile normalization is standard
+  const userData = {
+    oauthId: profile.id, // The 'sub' or unique ID
+    name: profile.displayName,
+    profileImg: profile.photos?.[0]?.value || profile._json?.picture,
+    provider: 'linkedin'
+  };
 
-    const user = await User.findOrCreate(userData);
-    return done(null, user);
-  } catch (error) {
-    return done(error, null);
-  }
+  // Your DB logic here
+  return User.findOrCreate(userData)
+    .then(user => done(null, user))
+    .catch(err => done(err));
 }));
 
 // JWT Strategy for API authentication

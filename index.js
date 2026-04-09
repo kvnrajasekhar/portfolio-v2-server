@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { successResponse } = require('./utils/responseHelper');
 const passport = require('passport');
+const session = require('express-session');
 
 // Import routes
 const authRoutes = require('./routes/auth.route');
@@ -81,8 +82,15 @@ app.use('/api/registry/sign', signatureLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+app.use(session({
+    secret: 'portfolio_secret_random_string', // Use a random string from .env
+    resave: false,
+    saveUninitialized: false,
+    cookie: { secure: false } // Set to true if using https
+}));
 // Initialize Passport
 app.use(passport.initialize());
+app.use(passport.session());
 
 // Database Connection
 mongoose.connect(process.env.MONGO_URI, {
