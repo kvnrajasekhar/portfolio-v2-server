@@ -34,7 +34,8 @@ const corsOptions = {
             process.env.FRONTEND_URL,
             'http://localhost:3000',
             'http://localhost:3001',
-            'https://your-portfolio-domain.com' // Replace with your actual portfolio domain
+            'https://vnrajasekhar.netlify.app',
+            'https://vnrajasekhar.dev',
         ];
 
         // Allow requests with no origin (like mobile apps or curl requests)
